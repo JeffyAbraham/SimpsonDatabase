@@ -1,0 +1,28 @@
+from __future__ import print_function
+import json, boto3
+
+# Connect to SNS
+sns = boto3.client('sns')
+alertTopic = 'DataQuery'
+snsTopicArn = [t['TopicArn'] for t in sns.list_topics()['Topics'] if t['TopicArn'].endswith(':' + alertTopic)][0]
+
+# Connect to DynamoDB
+dynamodb = boto3.resource('dynamodb')
+transactionTotalTableName = 'CustomerDetails'
+transactionsTotalTable = dynamodb.Table(transactionTotalTableName);
+
+# This handler is executed every time the Lambda function is triggered
+def lambda_handler(event, context):
+
+  # Show the incoming event in the debug log
+  print("Event received by Lambda function buhahahah: " + json.dumps(event, indent=2))
+
+  # For each transaction added, calculate the new Transactions Total
+  for record in event['Records']:
+    customerId = record['dynamodb']['NewImage']['EmailID']['S']
+    message = '{"Name  of newly entered Character": "' + customerId + '"}'
+    print("MESSAGE FOR JEFFY sent to registered mail")
+    print(message)
+    sns.publish(TopicArn=snsTopicArn,Message=message,Subject='Your Simpsons Database has been updated',MessageStructure='raw')
+  # Finished!
+  return 'Successfully processed {} records.'.format(len(event['Records']))
